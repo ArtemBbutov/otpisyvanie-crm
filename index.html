@@ -469,6 +469,8 @@ function localDb(){
   const snap=()=>({docs:Object.entries(data).map(([id,d])=>({id,data:()=>d}))});
   const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(data))}catch(_){toast('Браузер не даёт сохранить данные')}const s=snap();subs.forEach(f=>f(s))};
   const ref=id=>({id,async set(v){data[id]=v;save()},async update(v){if(!data[id])throw{code:'invalid_argument'};data[id]={...data[id],...v};save()},async delete(){delete data[id];save()}});
+  let hasStore=false;try{hasStore=localStorage.getItem(KEY)!==null}catch(_){}
+  if(!hasStore)fetch('leads.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{if(j&&!Object.keys(data).length){data=j;save()}}).catch(()=>{});
   return{collection:()=>({onSnapshot(f){subs.add(f);setTimeout(()=>f(snap()),0);return()=>subs.delete(f)},doc:id=>ref(id||Math.random().toString(36).slice(2,12))})};
 }
 function saveFile(name,text){
