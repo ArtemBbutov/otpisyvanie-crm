@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}img{max-width:100%}</style></head><body>
+<title>Отписывание CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: ink sidebar with stages | main: header, step funnel, dense lead rows (or board / days) | right drawer for one lead */
+:root{
+  --bg:#f5f5f2; --panel:#ffffff; --panel2:#f0f0ec; --line:#e4e3dd; --line2:#d6d5cd;
+  --fg:#1b1c22; --muted:#6d6e78; --faint:#9a9ba4;
+  --accent:#2f5bff; --accent-fg:#ffffff; --accent-soft:#e8edff;
+  --good:#138a55; --good-soft:#e1f4ea; --bad:#d23f31; --bad-soft:#fde8e5; --warn:#b26b00; --warn-soft:#fdf1dc;
+  --side:#15161f; --side2:#20212d; --side-fg:#e7e7ee; --side-muted:#8d8ea0; --side-line:#2a2b39;
+  --display:"Unbounded",system-ui,sans-serif; --body:"Golos Text",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111218; --panel:#181920; --panel2:#1f2029; --line:#272833; --line2:#33343f;
+  --fg:#ececf1; --muted:#9a9ba8; --faint:#6e6f7c;
+  --accent:#6f8bff; --accent-fg:#0d0f1a; --accent-soft:#1f2645;
+  --good:#45cc8c; --good-soft:#142d22; --bad:#ff7a6c; --bad-soft:#3a1d1a; --warn:#f0b04a; --warn-soft:#352812;
+  --side:#0b0c11; --side2:#16171f; --side-fg:#e7e7ee; --side-muted:#80818f; --side-line:#1f2029; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111218; --panel:#181920; --panel2:#1f2029; --line:#272833; --line2:#33343f;
+  --fg:#ececf1; --muted:#9a9ba8; --faint:#6e6f7c;
+  --accent:#6f8bff; --accent-fg:#0d0f1a; --accent-soft:#1f2645;
+  --good:#45cc8c; --good-soft:#142d22; --bad:#ff7a6c; --bad-soft:#3a1d1a; --warn:#f0b04a; --warn-soft:#352812;
+  --side:#0b0c11; --side2:#16171f; --side-fg:#e7e7ee; --side-muted:#80818f; --side-line:#1f2029; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.45;margin:0;-webkit-font-smoothing:antialiased}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100%}
+/* sidebar */
+.side{background:var(--side);color:var(--side-fg);padding:18px 12px;display:flex;flex-direction:column;gap:18px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:0 8px}
+.brand i{width:28px;height:28px;border-radius:8px;background:var(--accent);display:grid;place-items:center;font-style:normal;font-family:var(--display);font-size:13px;color:#fff}
+.brand b{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.01em}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav h6{margin:0 0 6px;padding:0 10px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--side-muted)}
+.nav button{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--side-muted);font-weight:500;text-align:left}
+.nav button:hover{background:var(--side2);color:var(--side-fg)}
+.nav button[aria-current="true"]{background:var(--side2);color:var(--side-fg)}
+.nav button span.l{flex:1}
+.nav button .c{font-family:var(--mono);font-size:12px;color:var(--side-muted)}
+.nav button[aria-current="true"] .c{color:var(--side-fg)}
+.nav .alert{background:var(--bad);color:#fff;border-radius:10px;padding:0 7px;font-size:11px;font-weight:700;font-family:var(--mono)}
+.dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:var(--c)}
+.side .grow{flex:1}
+.side .add{background:var(--accent);color:#fff;border-radius:9px;padding:10px;font-weight:600;text-align:center}
+.side .foot{font-size:12px;color:var(--side-muted);padding:0 8px}
+
+/* main */
+.main{padding:22px 28px 60px;min-width:0;display:flex;flex-direction:column;gap:18px}
+.head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.head h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px}
+.head h1 .num{font-size:15px;color:var(--faint);font-weight:500}
+.head .sp{flex:1}
+.search{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:0 10px;min-width:0;flex:0 1 280px}
+.search input{border:0;background:transparent;padding:8px 0;outline:0;width:100%;min-width:0}
+.search svg{flex:0 0 auto;color:var(--faint)}
+.seg{display:flex;background:var(--panel2);border-radius:9px;padding:3px}
+.seg button{padding:6px 11px;border-radius:7px;font-weight:600;font-size:13px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+/* funnel */
+.funnel{display:flex;align-items:stretch;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow-x:auto}
+.step{flex:1 0 120px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.step .k{font-size:12px;color:var(--muted);font-weight:500}
+.step .v{font-family:var(--mono);font-weight:700;font-size:26px;letter-spacing:-.02em}
+.conv{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0 4px;position:relative}
+.conv::before{content:"";position:absolute;top:14px;bottom:14px;left:50%;border-left:1px dashed var(--line2)}
+.pill{position:relative;font-family:var(--mono);font-weight:700;font-size:12px;padding:3px 8px;border-radius:20px;background:var(--panel2);color:var(--muted);white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.bad{background:var(--bad-soft);color:var(--bad)}
+.norm{position:relative;font-size:10px;color:var(--faint);background:var(--panel);padding:0 2px;white-space:nowrap}
+.periods{display:flex;gap:4px;align-items:center;margin-left:auto;padding:0 14px;flex:0 0 auto;border-left:1px solid var(--line)}
+.periods button{font-size:12px;padding:4px 9px;border-radius:20px;color:var(--muted);font-weight:600}
+.periods button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+
+/* rows */
+.rows{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.rowh,.row{display:grid;grid-template-columns:minmax(180px,1.2fr) minmax(0,2.4fr) 64px 118px 132px;gap:14px;align-items:center;padding:0 16px}
+.rowh{height:36px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line);background:var(--panel2)}
+.row{min-height:58px;border-bottom:1px solid var(--line);cursor:pointer}
+.row:last-child{border-bottom:0}
+.row:hover{background:var(--panel2)}
+.who{display:flex;gap:10px;align-items:center;min-width:0}
+.ava{width:32px;height:32px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff;background:var(--c);position:relative}
+.ava.lg{width:48px;height:48px;font-size:18px}
+.who .t{min-width:0;display:flex;flex-direction:column}
+.who .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who .h{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.desc{color:var(--muted);font-size:13px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.subs{font-family:var(--mono);font-size:13px;font-weight:700;text-align:right}
+.subs.none{color:var(--faint);font-weight:500}
+.when{font-size:12px;display:flex;flex-direction:column;gap:1px}
+.when .s{display:flex;align-items:center;gap:6px;font-weight:600}
+.when .d{color:var(--faint)}
+.when .due{color:var(--warn);font-weight:600}
+.when .due.late{color:var(--bad)}
+.act{display:flex;justify-content:flex-end;gap:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line2);background:var(--panel);border-radius:8px;padding:6px 10px;font-weight:600;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--fg)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.ghost{border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--bad);border-color:transparent}
+.btn.lg{padding:10px 14px;font-size:14px}
+.empty{padding:48px 20px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--fg);font-size:15px;margin-bottom:4px}
+
+/* board */
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(240px,1fr);gap:12px;overflow-x:auto;padding-bottom:6px;align-items:start}
+.col{background:var(--panel2);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.col h3{margin:4px 6px 4px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:flex;align-items:center;gap:8px}
+.col h3 .num{margin-left:auto}
+.mini{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:4px;text-align:left;width:100%}
+.mini:hover{border-color:var(--line2)}
+.mini .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.mini .n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini .desc{-webkit-line-clamp:2}
+
+/* days */
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:11px 16px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:600;background:var(--panel2)}
+td{font-family:var(--mono)} td:first-child{font-family:var(--body);font-weight:600}
+td.z{color:var(--faint)}
+tfoot td{font-weight:700;border-bottom:0}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(8,9,14,.4);z-index:20}
+.drawer{position:fixed;z-index:21;top:0;right:0;bottom:0;width:min(480px,100%);background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.15)}
+.dhead{padding:20px 22px 16px;display:flex;gap:14px;align-items:center;border-bottom:1px solid var(--line)}
+.dhead .t{min-width:0;flex:1}
+.dhead h2{margin:0;font-size:18px;font-weight:700;overflow-wrap:anywhere}
+.dhead .links{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--panel2);text-decoration:none;color:var(--fg)}
+a.tag:hover{background:var(--accent-soft);color:var(--accent)}
+.x{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--muted);flex:0 0 auto}
+.x:hover{background:var(--panel2);color:var(--fg)}
+.dbody{padding:18px 22px;overflow-y:auto;display:flex;flex-direction:column;gap:18px;flex:1}
+.track{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.track span{height:6px;border-radius:3px;background:var(--panel2)}
+.track span.on{background:var(--c)}
+.track-l{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;font-size:11px;color:var(--faint);margin-top:6px}
+.track-l b{color:var(--fg);font-weight:600}
+.nextbox{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.nextbox .btn.pri{flex:1}
+.lost{padding:10px 12px;border-radius:10px;background:var(--panel2);color:var(--muted);font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.f{display:flex;flex-direction:column;gap:5px}
+.f label{font-size:12px;font-weight:600;color:var(--muted)}
+.f input,.f textarea{border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:9px 11px;width:100%;min-width:0;outline:0}
+.f input:focus,.f textarea:focus{border-color:var(--accent);background:var(--panel)}
+.f textarea{min-height:76px;resize:vertical}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tl{display:flex;flex-direction:column;gap:8px;font-size:13px;border-left:2px solid var(--line);padding-left:14px}
+.tl div{display:flex;gap:10px;align-items:center;position:relative}
+.tl div::before{content:"";position:absolute;left:-19px;width:8px;height:8px;border-radius:50%;background:var(--c)}
+.tl .d{font-family:var(--mono);color:var(--faint);font-size:12px;width:44px}
+.dfoot{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+.picker{display:flex;flex-wrap:wrap;gap:6px}
+.picker button{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 9px;border-radius:20px;border:1px solid var(--line);color:var(--muted)}
+.picker button[aria-pressed="true"]{border-color:var(--fg);color:var(--fg)}
+details summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);list-style:none}
+details summary::-webkit-details-marker{display:none}
+details[open] summary{margin-bottom:8px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(22px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;z-index:40;display:flex;gap:12px;align-items:center}
+.toast button{color:var(--accent-soft);font-weight:700;text-decoration:underline}
+.notice{padding:12px 14px;border-radius:10px;background:var(--warn-soft);color:var(--warn)}
+.mtabs{display:none}
+
+@media (max-width:1100px){.rowh,.row{grid-template-columns:minmax(160px,1fr) minmax(0,1.6fr) 56px 120px}.rowh>:nth-child(4),.row>.when{display:none}}
+@media (max-width:760px){
+  .app{grid-template-columns:1fr}
+  .side{position:static;height:auto;flex-direction:row;align-items:center;padding:12px 16px;gap:10px}
+  .side .nav,.side .grow,.side .foot{display:none}
+  .side .add{margin-left:auto;padding:8px 12px}
+  .mtabs{display:flex;gap:6px;overflow-x:auto;padding:0 0 2px;scrollbar-width:none}
+  .mtabs button{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:7px 11px;border-radius:20px;border:1px solid var(--line);background:var(--panel);font-weight:600;font-size:13px;color:var(--muted)}
+  .mtabs button[aria-current="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+  .mtabs .num{font-size:11px}
+  .main{padding:14px 16px 60px;gap:14px}
+  .head h1{font-size:19px}
+  .search{flex:1 1 100%;order:3}
+  .rowh{display:none}
+  .row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"who act" "desc desc";gap:6px 10px;padding:12px 14px}
+  .row .who{grid-area:who}.row .desc{grid-area:desc;padding-left:42px}.row .act{grid-area:act}.row .subs,.row .when{display:none}
+  .funnel .step{flex-basis:96px;padding:12px}.funnel .step .v{font-size:22px}
+  .periods{display:none}
+  .f2{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:no-preference){.drawer{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><i>О</i><b>Отписывание</b></div>
+    <nav class="nav" id="navMain"></nav>
+    <nav class="nav" id="navStages"></nav>
+    <div class="grow"></div>
+    <button class="add" id="addBtn" type="button">+ Новый лид</button>
+    <div class="foot" id="status">Подключаюсь…</div>
+  </aside>
+
+  <main class="main">
+    <div class="mtabs" id="mtabs"></div>
+    <div class="head">
+      <h1 id="title">Лиды</h1>
+      <div class="sp"></div>
+      <label class="search" for="q"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Поиск по юзу, имени, нише" autocomplete="off"></label>
+      <div class="seg" id="layoutSeg"><button data-layout="list" aria-pressed="true">Список</button><button data-layout="board" aria-pressed="false">Доска</button></div>
+    </div>
+
+    <section class="funnel" id="funnel" aria-label="Воронка"></section>
+    <div class="notice" id="notice" hidden></div>
+    <section id="content"></section>
+  </main>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden role="dialog" aria-modal="true" aria-labelledby="dTitle"></aside>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const STAGES=[
+  {k:'new',t:'Найден',c:'#8b8c99'},
+  {k:'sent',t:'Написал',c:'#2f7de1'},
+  {k:'convo',t:'Ответил',c:'#7c5cf0'},
+  {k:'razbor',t:'Разбор',c:'#e08a1e'},
+  {k:'call',t:'Созвон',c:'#dc3f78'},
+  {k:'client',t:'Клиент',c:'#15935a'},
+  {k:'lost',t:'Мимо',c:'#b1b1b8'}];
+const ST=Object.fromEntries(STAGES.map((s,i)=>[s.k,{...s,i}]));
+const FLOW=['sent','convo','razbor','call','client'];
+const NEXT={new:'sent',sent:'convo',convo:'razbor',razbor:'call',call:'client'};
+const NEXT_LABEL={new:'Написал',sent:'Ответил',convo:'Разбор',razbor:'Созвон',call:'Клиент'};
+const NORMS={convo:[7,12],razbor:[70,null],call:[10,25],client:[50,70]};
+
+let db=null,downloads=null,leads=[],nav='new',period='all',layout='list',openId=null;
+try{layout=localStorage.getItem('crm.layout2')||'list';nav=localStorage.getItem('crm.nav2')||'new'}catch(e){}
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const fmtD=s=>{if(!s)return'';const[,m,d]=s.split('-');return d+'.'+m};
+const addDays=(s,n)=>{const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function url(v,yt){v=(v||'').trim();if(!v)return null;if(/^https?:\/\//.test(v))return v;if(/^(t\.me|youtube\.com)/.test(v))return'https://'+v;if(yt)return'https://youtube.com/'+(v.startsWith('@')?v:'@'+v);if(v.startsWith('@'))return'https://t.me/'+v.slice(1);return null}
+function short(v){v=(v||'').trim();if(/t\.me\/\+/.test(v))return'закрытый тгк';return v.replace(/^https?:\/\//,'').replace(/^t\.me\//,'@')}
+
+/* parse "2.9к пдп, Имя Фамилия, остальное" */
+function parse(l){
+  const note=(l.note||'').trim();let rest=note,subs='',name=l.name||'';
+  const m=rest.match(/^([\d.,]+\s?к?)\s*пдп(?:\s*\([^)]*\))?\s*[,.]?\s*/i);
+  if(m){subs=m[1].replace(/\s/g,'').replace(',','.');rest=rest.slice(m[0].length)}
+  const seg=rest.split(/,\s*/);
+  if(!name&&seg[0]&&/^[А-ЯЁA-Z][а-яёa-z]+(\s[А-ЯЁA-Z][а-яёa-z]+)?$/.test(seg[0].trim())){name=seg[0].trim();rest=seg.slice(1).join(', ')}
+  else if(name&&seg[0]&&seg[0].trim()===name){rest=seg.slice(1).join(', ')}
+  rest=rest.charAt(0).toUpperCase()+rest.slice(1);
+  const handle=l.dm||short(l.tg)||'';
+  return{subs,name:name||handle||'Без имени',handle,rest};
+}
+function initials(n){const w=n.replace(/^@/,'').split(/[\s_]+/).filter(Boolean);return((w[0]||'?')[0]+(w[1]?w[1][0]:'')).toUpperCase()}
+function hue(s){let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%360;return`hsl(${h} 45% 48%)`}
+function reached(l){const s=new Set((l.history||[]).map(h=>h.stage));if(l.stage&&l.stage!=='lost')s.add(l.stage);return s}
+function firstAt(l,st){const h=(l.history||[]).find(h=>h.stage===st);return h?h.at:null}
+let toastT;function toast(t,undo){const el=$('#toast');el.innerHTML=esc(t)+(undo?' <button id="undoBtn">Отменить</button>':'');el.hidden=false;toast.undo=undo;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,undo?5000:1800)}
+const dueList=()=>{const d=today();return leads.filter(l=>l.nextAt&&l.nextAt<=d&&l.stage!=='lost'&&l.stage!=='client')};
+
+/* ---------- nav ---------- */
+function counts(){const c=Object.fromEntries(STAGES.map(s=>[s.k,0]));leads.forEach(l=>c[l.stage||'new']++);return c}
+function renderNav(){
+  const c=counts(),due=dueList().length;
+  const item=(k,label,count,dot,extra='')=>`<button data-nav="${k}" aria-current="${nav===k}">${dot?`<span class="dot" style="--c:${dot}"></span>`:''}<span class="l">${label}</span>${extra}<span class="c">${count}</span></button>`;
+  $('#navMain').innerHTML=`<h6>Работа</h6>${item('today','Сегодня',due?'':'0',null,due?`<span class="alert">${due}</span>`:'')}${item('all','Все лиды',leads.length)}${item('days','По дням','')}`;
+  $('#navStages').innerHTML=`<h6>Этапы</h6>`+STAGES.map(s=>item(s.k,s.t,c[s.k],s.c)).join('');
+  $('#mtabs').innerHTML=[['today','Сегодня',due],['all','Все',leads.length],...STAGES.map(s=>[s.k,s.t,c[s.k]]),['days','По дням','']].map(([k,t,n])=>`<button data-nav="${k}" aria-current="${nav===k}">${t} <span class="num">${n}</span></button>`).join('');
+}
+
+/* ---------- funnel ---------- */
+function inPeriod(d){if(period==='all')return true;if(!d)return false;return d>=addDays(today(),-(Number(period)-1))}
+function renderFunnel(){
+  const base=leads.filter(l=>reached(l).has('sent')&&inPeriod(firstAt(l,'sent')));
+  const n={};FLOW.forEach((k,i)=>n[k]=base.filter(l=>{const r=reached(l);return FLOW.slice(i).some(x=>r.has(x))}).length);
+  const labels={sent:'Написал',convo:'Ответили',razbor:'Разбор',call:'Созвон',client:'Клиент'};
+  let h='';
+  FLOW.forEach((k,i)=>{
+    if(i){const from=FLOW[i-1],p=n[from]?Math.round(n[k]/n[from]*100):null,[lo,hi]=NORMS[k];
+      h+=`<div class="conv"><span class="pill ${p==null?'':(p>=lo?'good':'bad')}">${p==null?'—':p+'%'}</span><span class="norm">норма ${lo}${hi?'–'+hi:'+'}%</span></div>`}
+    h+=`<div class="step"><span class="k">${labels[k]}</span><span class="v">${n[k]}</span></div>`;
+  });
+  h+=`<div class="periods">${[['all','всё'],['7','7 дн'],['1','сегодня']].map(([p,t])=>`<button data-p="${p}" aria-pressed="${period===p}">${t}</button>`).join('')}</div>`;
+  $('#funnel').innerHTML=h;
+}
+
+/* ---------- list / board ---------- */
+function matches(l,q){if(!q)return true;q=q.toLowerCase();return[l.tg,l.dm,l.name,l.note,l.yt,l.log].some(v=>(v||'').toLowerCase().includes(q))}
+function currentSet(){
+  const q=$('#q').value.trim();let a=leads.filter(l=>matches(l,q));
+  if(nav==='today'){const d=today();a=a.filter(l=>l.nextAt&&l.nextAt<=d&&l.stage!=='lost'&&l.stage!=='client').sort((x,y)=>x.nextAt.localeCompare(y.nextAt));return a}
+  if(nav!=='all'&&ST[nav])a=a.filter(l=>(l.stage||'new')===nav);
+  return a.sort((x,y)=>(y.stageAt||'').localeCompare(x.stageAt||'')||(x.order??0)-(y.order??0));
+}
+function whenHtml(l){
+  const s=ST[l.stage]||ST.new,d=today();
+  const due=l.nextAt?`<span class="due ${l.nextAt<d?'late':''}">${l.nextAt<d?'просрочено':l.nextAt===d?'сегодня':fmtD(l.nextAt)}${l.nextNote?' · '+esc(l.nextNote):''}</span>`:`<span class="d">с ${fmtD(l.stageAt)}</span>`;
+  return`<div class="when"><span class="s"><span class="dot" style="--c:${s.c}"></span>${s.t}</span>${due}</div>`;
+}
+function rowHtml(l){
+  const p=parse(l),nxt=NEXT[l.stage];
+  return`<div class="row" data-open="${l.id}">
+    <div class="who"><span class="ava" style="--c:${hue(p.handle||p.name)}">${esc(initials(p.name))}</span><span class="t"><span class="n">${esc(p.name)}</span><span class="h">${esc(p.handle)}</span></span></div>
+    <div class="desc">${esc(p.rest)||'<span style="color:var(--faint)">без комментария</span>'}</div>
+    <div class="subs ${p.subs?'':'none'}">${p.subs||'—'}</div>
+    ${whenHtml(l)}
+    <div class="act">${nxt?`<button class="btn ${l.stage==='new'?'':'pri'}" data-move="${l.id}" data-to="${nxt}">${NEXT_LABEL[l.stage]} →</button>`:''}</div>
+  </div>`;
+}
+function emptyHtml(){
+  if(!leads.length)return`<div class="empty"><b>Лидов пока нет</b>Нажми «Новый лид» или попроси Claude перенести их.</div>`;
+  if(nav==='today')return`<div class="empty"><b>На сегодня всё</b>Напоминания появятся, когда отметишь «Написал» или поставишь дату в карточке.</div>`;
+  return`<div class="empty"><b>Здесь пусто</b>Выбери другой этап или очисти поиск.</div>`;
+}
+function renderContent(){
+  const c=$('#content');
+  if(nav==='days'){renderDays();return}
+  if(layout==='board'&&nav!=='today'){
+    const q=$('#q').value.trim();
+    c.innerHTML=`<div class="board">${STAGES.map(s=>{const items=leads.filter(l=>(l.stage||'new')===s.k&&matches(l,q));
+      return`<div class="col"><h3><span class="dot" style="--c:${s.c}"></span>${s.t}<span class="num">${items.length}</span></h3>${items.slice(0,60).map(l=>{const p=parse(l);return`<button class="mini" data-open="${l.id}"><span class="top"><span class="n">${esc(p.name)}</span><span class="subs ${p.subs?'':'none'}">${p.subs||''}</span></span><span class="desc">${esc(p.rest)}</span></button>`}).join('')}${items.length>60?`<div class="empty">ещё ${items.length-60}</div>`:''}</div>`}).join('')}</div>`;
+    return}
+  const items=currentSet();
+  c.innerHTML=`<div class="rows">${items.length?`<div class="rowh"><span>Лид</span><span>О нём</span><span style="text-align:right">ТГК</span><span>Этап</span><span></span></div>`+items.map(rowHtml).join(''):emptyHtml()}</div>`;
+}
+function renderDays(){
+  const ev={},keys=['new','sent','convo','razbor','call','client'];
+  leads.forEach(l=>(l.history||[]).forEach(h=>{if(!keys.includes(h.stage))return;(ev[h.at]??={})[h.stage]=(ev[h.at][h.stage]||0)+1}));
+  const days=Object.keys(ev).sort().reverse(),tot=Object.fromEntries(keys.map(k=>[k,0]));
+  const row=(d,o)=>`<tr><td>${d}</td>${keys.map(k=>`<td class="${o[k]?'':'z'}">${o[k]||0}</td>`).join('')}</tr>`;
+  const body=days.map(d=>{keys.forEach(k=>tot[k]+=ev[d][k]||0);return row(fmtD(d),ev[d])}).join('');
+  $('#content').innerHTML=`<div class="tablewrap"><table><thead><tr><th>День</th><th>Найдено</th><th>Написал</th><th>Ответили</th><th>Разборов</th><th>Созвонов</th><th>Клиентов</th></tr></thead><tbody>${body||'<tr><td colspan="7" class="z" style="text-align:left">Событий пока нет</td></tr>'}</tbody>${days.length?`<tfoot>${row('Итого',tot)}</tfoot>`:''}</table></div>${downloads||localMode?'<div style="margin-top:12px"><button class="btn" id="exportBtn">Скачать всё в CSV</button></div>':''}`;
+}
+function renderHead(){
+  const c=counts();
+  const t=nav==='today'?['Сегодня',dueList().length]:nav==='all'?['Все лиды',leads.length]:nav==='days'?['По дням','']:[ST[nav].t,c[nav]];
+  $('#title').innerHTML=`${t[0]} <span class="num">${t[1]}</span>`;
+  $('#layoutSeg').hidden=nav==='days'||nav==='today';
+  document.querySelectorAll('#layoutSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.layout===layout));
+  $('.search').hidden=nav==='days';
+}
+function render(){renderNav();renderFunnel();renderHead();renderContent();if(openId)renderDrawer()}
+
+/* ---------- writes ---------- */
+async function patch(id,data){
+  if(!db){toast('База недоступна');return false}
+  try{await db.collection('leads').doc(id).update(data);return true}catch(e){toast(e.code==='invalid_argument'?'Нет прав на изменение':'Не сохранилось, попробуй ещё раз');return false}
+}
+async function move(id,to){
+  const l=leads.find(x=>x.id===id);if(!l||l.stage===to)return;const d=today();
+  const prev={stage:l.stage,stageAt:l.stageAt,history:l.history||[],nextAt:l.nextAt||'',nextNote:l.nextNote||''};
+  const data={stage:to,stageAt:d,history:[...(l.history||[]),{stage:to,at:d}]};
+  if(to==='sent'){data.nextAt=addDays(d,2);data.nextNote='проверить ответ'}
+  else if(to==='convo'){data.nextAt=d;data.nextNote='вопрос на узкое место'}
+  else if(to==='razbor'){data.nextAt=addDays(d,1);data.nextNote='позвать на созвон'}
+  else if(to==='client'||to==='lost'){data.nextAt='';data.nextNote=''}
+  if(await patch(id,data))toast(`${parse(l).name} → ${ST[to].t}`,async()=>{await patch(id,prev)});
+}
+
+/* ---------- drawer ---------- */
+function openDrawer(id){openId=id;$('#scrim').hidden=false;$('#drawer').hidden=false;renderDrawer(true)}
+function closeDrawer(){openId=null;$('#scrim').hidden=true;$('#drawer').hidden=true}
+function renderDrawer(force){
+  const dr=$('#drawer');
+  if(openId==='__new'){if(!force)return;
+    dr.innerHTML=`<div class="dhead"><div class="t"><h2 id="dTitle">Новый лид</h2></div><button class="x" data-close aria-label="Закрыть">✕</button></div>
+    <div class="dbody"><div class="f"><label for="f-dm">Личка</label><input id="f-dm" placeholder="@username"></div>
+    <div class="f"><label for="f-tg">Тгк</label><input id="f-tg" placeholder="@channel или t.me/+…"></div>
+    <div class="f"><label for="f-name">Имя</label><input id="f-name"></div>
+    <div class="f"><label for="f-note">Комментарий</label><textarea id="f-note" placeholder="2.5к пдп, ниша, что продаёт, почему хороший"></textarea></div></div>
+    <div class="dfoot"><button class="btn" data-close>Отмена</button><button class="btn pri lg" id="createBtn">Добавить лид</button></div>`;
+    setTimeout(()=>$('#f-dm').focus(),30);return}
+  const l=leads.find(x=>x.id===openId);if(!l){closeDrawer();return}
+  const ae=document.activeElement;
+  if(!force&&ae&&dr.contains(ae)&&/^f-/.test(ae.id)){dr.querySelector('#dyn').innerHTML=dynHtml(l);return}
+  const p=parse(l),tg=url(l.tg),dm=url(l.dm),yt=l.yt?url(l.yt,true):null;
+  dr.innerHTML=`<div class="dhead"><span class="ava lg" style="--c:${hue(p.handle||p.name)}">${esc(initials(p.name))}</span>
+    <div class="t"><h2 id="dTitle">${esc(p.name)}</h2><div class="links">
+      ${dm?`<a class="tag" href="${esc(dm)}" target="_blank" rel="noopener">✉ ${esc(l.dm)}</a>`:''}
+      ${tg?`<a class="tag" href="${esc(tg)}" target="_blank" rel="noopener">тгк${p.subs?' · '+p.subs:''}</a>`:''}
+      ${yt?`<a class="tag" href="${esc(yt)}" target="_blank" rel="noopener">ютуб</a>`:''}
+      ${l.dm?`<button class="tag" data-copy="${esc(l.dm)}">копировать юз</button>`:''}</div></div>
+    <button class="x" data-close aria-label="Закрыть">✕</button></div>
+  <div class="dbody">
+    <div id="dyn">${dynHtml(l)}</div>
+    <div class="f"><label for="f-note">О лиде</label><textarea id="f-note">${esc(l.note)}</textarea></div>
+    <div class="f"><label for="f-log">Переписка и мысли</label><textarea id="f-log" placeholder="что ответил, что предложить дальше">${esc(l.log)}</textarea></div>
+    <div class="f2"><div class="f"><label for="f-nextAt">Напомнить</label><input id="f-nextAt" type="date" value="${esc(l.nextAt)}"></div>
+      <div class="f"><label for="f-nextNote">Что сделать</label><input id="f-nextNote" value="${esc(l.nextNote)}" placeholder="скинуть гс"></div></div>
+    <details><summary>Контакты и имя ▾</summary><div style="display:flex;flex-direction:column;gap:12px">
+      <div class="f2"><div class="f"><label for="f-dm">Личка</label><input id="f-dm" value="${esc(l.dm)}"></div><div class="f"><label for="f-tg">Тгк</label><input id="f-tg" value="${esc(l.tg)}"></div></div>
+      <div class="f2"><div class="f"><label for="f-name">Имя</label><input id="f-name" value="${esc(l.name)}"></div><div class="f"><label for="f-yt">Ютуб</label><input id="f-yt" value="${esc(l.yt)}" placeholder="@канал"></div></div></div></details>
+  </div>
+  <div class="dfoot"><button class="btn ghost" id="delBtn">Удалить лида</button><button class="btn" data-close>Готово</button></div>`;
+}
+function dynHtml(l){
+  const r=reached(l),s=ST[l.stage]||ST.new,nxt=NEXT[l.stage];
+  const track=`<div class="track">${FLOW.map(k=>`<span class="${r.has(k)?'on':''}" style="--c:${ST[k].c}"></span>`).join('')}</div>
+    <div class="track-l">${FLOW.map(k=>`<span>${k===l.stage?`<b>${ST[k].t}</b>`:ST[k].t}</span>`).join('')}</div>`;
+  const next=l.stage==='lost'?`<div class="lost">Отмечен как «Мимо» ${fmtD(l.stageAt)}<button class="btn" data-move="${l.id}" data-to="${[...FLOW].reverse().find(k=>r.has(k))||'new'}">Вернуть</button></div>`
+    :l.stage==='client'?`<div class="lost" style="background:var(--good-soft);color:var(--good)">Клиент с ${fmtD(l.stageAt)} 🎉</div>`
+    :`<div class="nextbox"><button class="btn pri lg" data-move="${l.id}" data-to="${nxt}">Отметить: ${NEXT_LABEL[l.stage]}</button><button class="btn lg" data-move="${l.id}" data-to="lost">Мимо</button></div>`;
+  const tl=(l.history||[]).slice().reverse().map(h=>`<div style="--c:${ST[h.stage]?.c||'#999'}"><span class="d">${fmtD(h.at)}</span>${esc(ST[h.stage]?.t||h.stage)}</div>`).join('');
+  return`<div style="display:flex;flex-direction:column;gap:14px">${track}${next}
+    <details><summary>История и смена этапа ▾</summary><div style="display:flex;flex-direction:column;gap:12px"><div class="tl">${tl||'<div>пусто</div>'}</div>
+    <div class="picker">${STAGES.map(x=>`<button data-move="${l.id}" data-to="${x.k}" aria-pressed="${x.k===s.k}"><span class="dot" style="--c:${x.c}"></span>${x.t}</button>`).join('')}</div></div></details></div>`;
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('button,a,[data-open],[data-close]');if(!t)return;
+  if(t.tagName==='A')return;
+  if(t.id==='undoBtn'){const u=toast.undo;$('#toast').hidden=true;if(u){await u();toast('Отменено')}return}
+  if(t.dataset.move){e.stopPropagation();move(t.dataset.move,t.dataset.to);return}
+  if(t.dataset.copy){const v=t.dataset.copy;try{await navigator.clipboard.writeText(v);toast('Скопировано '+v)}catch(_){toast(v)}return}
+  if(t.dataset.nav){nav=t.dataset.nav;try{localStorage.setItem('crm.nav2',nav)}catch(_){};render();return}
+  if(t.dataset.layout){layout=t.dataset.layout;try{localStorage.setItem('crm.layout2',layout)}catch(_){};renderHead();renderContent();return}
+  if(t.dataset.p){period=t.dataset.p;renderFunnel();return}
+  if(t.hasAttribute('data-close')){closeDrawer();return}
+  if(t.dataset.open){openDrawer(t.dataset.open);return}
+  if(t.id==='addBtn'){openDrawer('__new');return}
+  if(t.id==='exportBtn'){exportCsv();return}
+  if(t.id==='createBtn'){
+    const dm=$('#f-dm').value.trim(),tg=$('#f-tg').value.trim();if(!dm&&!tg){toast('Нужна личка или тгк');return}
+    if(!db){toast('База недоступна');return}const d=today();
+    const id=(dm||tg).replace(/^.*\//,'').replace(/[^A-Za-z0-9_-]/g,'').toLowerCase()||undefined;
+    try{const ref=id&&!leads.some(x=>x.id===id)?db.collection('leads').doc(id):db.collection('leads').doc();
+      await ref.set({dm,tg,name:$('#f-name').value.trim(),note:$('#f-note').value.trim(),yt:'',log:'',stage:'new',stageAt:d,history:[{stage:'new',at:d}],nextAt:'',nextNote:'',order:Date.now()});
+      toast('Лид добавлен');closeDrawer()}catch(_){toast('Не сохранилось')}
+    return}
+  if(t.id==='delBtn'){if(t.dataset.armed){const id=openId;closeDrawer();try{await db.collection('leads').doc(id).delete();toast('Удалён')}catch(_){toast('Не удалилось')}}else{t.dataset.armed='1';t.textContent='Нажми ещё раз, чтобы удалить';t.style.color='var(--bad)'}return}
+});
+$('#scrim').addEventListener('click',closeDrawer);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&openId)closeDrawer();if(e.key==='/'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){e.preventDefault();$('#q').focus()}});
+$('#q').addEventListener('input',renderContent);
+document.addEventListener('change',e=>{
+  if(!openId||openId==='__new')return;const id=e.target.id;if(!/^f-/.test(id))return;
+  const key=id.slice(2),l=leads.find(x=>x.id===openId);if(!l)return;
+  const v=e.target.value.trim();if((l[key]||'')===v)return;patch(openId,{[key]:v});
+});
+function exportCsv(){
+  const cols=['name','dm','tg','yt','stage','stageAt','note','log','nextAt','nextNote'],q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const csv=[cols.join(','),...leads.map(l=>cols.map(c=>q(c==='stage'?ST[l.stage]?.t:l[c])).join(','))].join('\n');
+  saveFile('leads-'+today()+'.csv','﻿'+csv);
+}
+
+/* ---------- local mode (outside claude.ai): leads live in this browser ---------- */
+let localMode=false;
+function localDb(){
+  const KEY='crm.leads.v1';let data={};try{data=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(_){}
+  const subs=new Set();
+  const snap=()=>({docs:Object.entries(data).map(([id,d])=>({id,data:()=>d}))});
+  const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(data))}catch(_){toast('Браузер не даёт сохранить данные')}const s=snap();subs.forEach(f=>f(s))};
+  const ref=id=>({id,async set(v){data[id]=v;save()},async update(v){if(!data[id])throw{code:'invalid_argument'};data[id]={...data[id],...v};save()},async delete(){delete data[id];save()}});
+  return{collection:()=>({onSnapshot(f){subs.add(f);setTimeout(()=>f(snap()),0);return()=>subs.delete(f)},doc:id=>ref(id||Math.random().toString(36).slice(2,12))})};
+}
+function saveFile(name,text){
+  if(downloads){downloads.save({filename:name,data:text}).catch(()=>{});return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/csv'}));a.download=name;document.body.appendChild(a);a.click();a.remove();
+}
+
+/* ---------- boot ---------- */
+render();
+(async()=>{
+  db=window.claude?.use?await window.claude.use('db').catch(()=>null):null;
+  if(!db){db=localDb();localMode=true}
+  db.collection('leads').onSnapshot(snap=>{leads=snap.docs.map(d=>({id:d.id,...d.data()}));$('#status').textContent=localMode?`${leads.length} лидов · хранятся в этом браузере`:`${leads.length} лидов · синхронизировано`;render()},
+    ()=>{$('#status').textContent='Связь прервалась, обнови страницу'});
+  if(!localMode)downloads=await window.claude.use('downloads').catch(()=>null);
+})();
+</script>
+
+</body></html>

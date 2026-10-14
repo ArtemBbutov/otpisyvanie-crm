@@ -344,7 +344,7 @@ function renderDays(){
   const days=Object.keys(ev).sort().reverse(),tot=Object.fromEntries(keys.map(k=>[k,0]));
   const row=(d,o)=>`<tr><td>${d}</td>${keys.map(k=>`<td class="${o[k]?'':'z'}">${o[k]||0}</td>`).join('')}</tr>`;
   const body=days.map(d=>{keys.forEach(k=>tot[k]+=ev[d][k]||0);return row(fmtD(d),ev[d])}).join('');
-  $('#content').innerHTML=`<div class="tablewrap"><table><thead><tr><th>День</th><th>Найдено</th><th>Написал</th><th>Ответили</th><th>Разборов</th><th>Созвонов</th><th>Клиентов</th></tr></thead><tbody>${body||'<tr><td colspan="7" class="z" style="text-align:left">Событий пока нет</td></tr>'}</tbody>${days.length?`<tfoot>${row('Итого',tot)}</tfoot>`:''}</table></div>${downloads?'<div style="margin-top:12px"><button class="btn" id="exportBtn">Скачать всё в CSV</button></div>':''}`;
+  $('#content').innerHTML=`<div class="tablewrap"><table><thead><tr><th>День</th><th>Найдено</th><th>Написал</th><th>Ответили</th><th>Разборов</th><th>Созвонов</th><th>Клиентов</th></tr></thead><tbody>${body||'<tr><td colspan="7" class="z" style="text-align:left">Событий пока нет</td></tr>'}</tbody>${days.length?`<tfoot>${row('Итого',tot)}</tfoot>`:''}</table></div>${downloads||localMode?'<div style="margin-top:12px"><button class="btn" id="exportBtn">Скачать всё в CSV</button></div>':''}`;
 }
 function renderHead(){
   const c=counts();
@@ -456,16 +456,31 @@ document.addEventListener('change',e=>{
 function exportCsv(){
   const cols=['name','dm','tg','yt','stage','stageAt','note','log','nextAt','nextNote'],q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
   const csv=[cols.join(','),...leads.map(l=>cols.map(c=>q(c==='stage'?ST[l.stage]?.t:l[c])).join(','))].join('\n');
-  downloads.save({filename:'leads-'+today()+'.csv',data:'﻿'+csv}).catch(()=>{});
+  saveFile('leads-'+today()+'.csv','﻿'+csv);
+}
+
+/* ---------- local mode (outside claude.ai): leads live in this browser ---------- */
+let localMode=false;
+function localDb(){
+  const KEY='crm.leads.v1';let data={};try{data=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(_){}
+  const subs=new Set();
+  const snap=()=>({docs:Object.entries(data).map(([id,d])=>({id,data:()=>d}))});
+  const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(data))}catch(_){toast('Браузер не даёт сохранить данные')}const s=snap();subs.forEach(f=>f(s))};
+  const ref=id=>({id,async set(v){data[id]=v;save()},async update(v){if(!data[id])throw{code:'invalid_argument'};data[id]={...data[id],...v};save()},async delete(){delete data[id];save()}});
+  return{collection:()=>({onSnapshot(f){subs.add(f);setTimeout(()=>f(snap()),0);return()=>subs.delete(f)},doc:id=>ref(id||Math.random().toString(36).slice(2,12))})};
+}
+function saveFile(name,text){
+  if(downloads){downloads.save({filename:name,data:text}).catch(()=>{});return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/csv'}));a.download=name;document.body.appendChild(a);a.click();a.remove();
 }
 
 /* ---------- boot ---------- */
 render();
 (async()=>{
-  db=await window.claude?.use?.('db').catch(()=>null);
-  if(!db){$('#status').textContent='';const n=$('#notice');n.hidden=false;n.textContent='База недоступна в этом окне. Открой страницу на claude.ai под своим аккаунтом.';return}
-  db.collection('leads').onSnapshot(snap=>{leads=snap.docs.map(d=>({id:d.id,...d.data()}));$('#status').textContent=`${leads.length} лидов · синхронизировано`;render()},
+  db=window.claude?.use?await window.claude.use('db').catch(()=>null):null;
+  if(!db){db=localDb();localMode=true}
+  db.collection('leads').onSnapshot(snap=>{leads=snap.docs.map(d=>({id:d.id,...d.data()}));$('#status').textContent=localMode?`${leads.length} лидов · хранятся в этом браузере`:`${leads.length} лидов · синхронизировано`;render()},
     ()=>{$('#status').textContent='Связь прервалась, обнови страницу'});
-  downloads=await window.claude?.use?.('downloads').catch(()=>null);
+  if(!localMode)downloads=await window.claude.use('downloads').catch(()=>null);
 })();
 </script>
